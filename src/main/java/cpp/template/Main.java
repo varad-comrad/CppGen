@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Map;
+
 import org.apache.commons.cli.*;
 
 /**
@@ -26,10 +28,19 @@ import org.apache.commons.cli.*;
  */
 public class Main {
 
-    public  static String version = "0.1";
-
+    public static String version = "0.1";
+    public static String enterDirString;
 
     public static void main(String[] args){
+        try {
+            if(runCommand(new ProcessBuilder("echo $CPP_TEMPLATE_1J")).isEmpty()) {
+                setupTemplateGenerator();
+            }
+        } catch (IOException e) {
+                e.printStackTrace();
+
+        }
+
         Options options = getOptions();
 
         CommandLineParser parser = new DefaultParser();
@@ -60,7 +71,7 @@ public class Main {
                 else type = "bin";
 
                 if(builder == null) builder = "cmake";
-
+                enterDirString = "cd " + path + " && cd " + name;
                 System.out.println("Name: " + name);
                 System.out.println("Path: " + path);
                 System.out.println("Builder: " + builder);
@@ -76,9 +87,13 @@ public class Main {
         }
     }
 
+    private static void setupTemplateGenerator() {
+
+    }
+
     private static void buildProject(String name, String path, String builder, String type, boolean git){
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("cd " + path + " && mkdir " + name + " && cd " + name + " && touch README.md" + "mkdir src docs includes scripts test" + (git ? " && git init && touch .gitignore .gitmodules" : ""));
+            ProcessBuilder processBuilder = new ProcessBuilder("cd " + path + " && mkdir " + name + " && cd " + name + " && echo \"# " + name + "\" > README.md" + " && mkdir src docs includes scripts test" + (git ? " && git init && touch .gitignore .gitmodules" : ""));
             runCommand(processBuilder);
 
             if(builder.equals("premake")){
@@ -96,27 +111,41 @@ public class Main {
     }
 
     private static void buildCmakeProject(String path, String name, String type) throws IOException{
-        ProcessBuilder processBuilder = new ProcessBuilder("cd " + path + " && cd " + name + " && touch CMakeLists.txt && mkdir build cmake");
+        ProcessBuilder processBuilder = new ProcessBuilder(enterDirString + " && mkdir build cmake");
         runCommand(processBuilder);
 
         if (type.equals("lib")) {
-            processBuilder = new ProcessBuilder("cd " + path + " && cd " + name + " && cd src && touch lib.cpp");
+            processBuilder = new ProcessBuilder(enterDirString + " && cd src && touch lib.cpp");
         } else {
-            processBuilder = new ProcessBuilder("cd " + path + " && cd " + name + " && cd src && touch main.cpp");
+            processBuilder = new ProcessBuilder(enterDirString + " && cd src && touch main.cpp");
         }
 
+        runCommand(processBuilder);
+
+        processBuilder = new ProcessBuilder(enterDirString + " && cat > CMakeLists.txt");
+        runCommand(processBuilder);
+        processBuilder = new ProcessBuilder(enterDirString + " && cat > scripts/build.sh");
+        runCommand(processBuilder);
+        processBuilder = new ProcessBuilder(enterDirString + " && cat > scripts/build.bat");
         runCommand(processBuilder);
     }
 
     private static void buildPremakeProject(String path, String name, String type) throws IOException{
-        ProcessBuilder processBuilder = new ProcessBuilder("cd " + path + " && cd " + name + " && touch Build.lua && mkdir premake");
+        ProcessBuilder processBuilder = new ProcessBuilder(enterDirString + " && mkdir premake");
         runCommand(processBuilder);
 
         if (type.equals("lib")) {
-            processBuilder = new ProcessBuilder("cd " + path + " && cd " + name + " && cd src && touch lib.cpp");
+            processBuilder = new ProcessBuilder(enterDirString + " && cd src && touch lib.cpp");
         } else {
-            processBuilder = new ProcessBuilder("cd " + path + " && cd " + name + " && cd src && touch main.cpp");
+            processBuilder = new ProcessBuilder(enterDirString + " && cd src && touch main.cpp");
         }
+        runCommand(processBuilder);
+
+        processBuilder = new ProcessBuilder(enterDirString + " && cat > Build.lua");
+        runCommand(processBuilder);
+        processBuilder = new ProcessBuilder(enterDirString + " && cat > scripts/build.sh");
+        runCommand(processBuilder);
+        processBuilder = new ProcessBuilder(enterDirString + " && cat > scripts/build.bat");
         runCommand(processBuilder);
     }
 
@@ -151,14 +180,17 @@ public class Main {
         return options;
     }
 
-    private static void runCommand(ProcessBuilder processBuilder) throws IOException {
+    private static String runCommand(ProcessBuilder processBuilder) throws IOException {
         Process process = processBuilder.start();
         InputStream inputStream = process.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         String line;
+        StringBuilder stringBuilder = new StringBuilder();
         while ((line = reader.readLine()) != null) {
             System.out.println(line);
+            stringBuilder.append("\n").append(line);
         }
+        return stringBuilder.toString();
     }
 
     private static void interactiveCreationMode() {
