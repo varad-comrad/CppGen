@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+
+# This script is used to run cmake automatically
+
+script_dir=\"\$( cd \"\$( dirname \"\${BASH_SOURCE[0]}\" )\" && pwd )\"
+
+project_root=\"\$script_dir/..\"
+
+cd \"\$project_root\" || exit 1
+
+cmake -S . -B ./build || { echo \"CMake failed\"; exit 1; }
+
+if [ \"\$1\" = \"run\" ]; then
+    shift
+    ./build/make $@
+fi

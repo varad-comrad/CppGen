@@ -1,0 +1,17 @@
+@echo off
+rem This script is used to run cmake automatically
+
+set \"script_dir=%~dp0\"
+set \"project_root=%script_dir%..\"
+cd /d \"%project_root%\" || exit /b 1
+
+cmake -S . -B .\build
+if errorlevel 1 (
+    echo CMake failed
+    exit /b 1
+)
+
+if \"%1\"==\"run\" (
+    shift
+    .\build\make %*
+)

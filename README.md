@@ -16,6 +16,7 @@ For Linux users, you can use the following commands to install the tool:
 ```bash
 git clone https://github.com/varad-comrad/CppTemplateGen
 cd CppTemplateGen
+chmod +x setup.sh
 ./setup.sh
 ```
 

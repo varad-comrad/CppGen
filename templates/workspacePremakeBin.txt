@@ -1,0 +1,41 @@
+workspace (WORKSPACE_NAME)
+    startproject (START_PROJECT)
+    configurations {
+        \"debug\",
+        \"profile\",
+        \"release\"
+    }
+    platforms {
+
+    }
+    filter \"configurations:debug\"
+        runtime  \"debug\"
+        symbols  \"on\"
+        optimize \"off\"
+    filter \"configurations:profile\"
+        runtime  \"release\"
+        symbols  \"on\"
+        optimize \"on\"
+    filter \"configurations:release\"
+        runtime  \"release\"
+        symbols  \"off\"
+        optimize \"on\"
+
+    filter \"platforms:Win32\"
+        system \"Windows\"
+        architecture \"x86\"
+    filter \"platforms:Win64\"
+        system \"Windows\"
+        architecture \"x86_64\"
+    filter \"platforms:Linux\"
+        system \"Linux\"
+        architecture \"x86\"
+    filter \"platforms:Linux64\"
+        system \"Linux\"
+        architecture \"x86_64\"
+    filter \"platforms:MacOSX\"
+        system \"MacOSX\"
+        architecture \"x86\"
+    filter \"platforms:MacOSX64\"
+        system \"MacOSX\"
+        architecture \"x86_64\"

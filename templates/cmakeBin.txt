@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION {{minimumCMakeVersion}})
+
+project({{projectName}})
+
+set(CMAKE_CXX_FLAGS {})
+
+
+set(DIVISIBLE_INSTALL_LIB_DIR \${PROJECT_SOURCE_DIR}/dependencies)
+include_directories(\${DIVISIBLE_INSTALL_INCLUDE_DIR})
+
+
+add_executable(\${PROJECT_NAME} src/main.cpp)
+
+

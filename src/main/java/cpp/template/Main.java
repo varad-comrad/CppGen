@@ -4,6 +4,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.cli.*;
 
 /**
@@ -28,6 +35,7 @@ public class Main {
 
     public static String version = "0.1";
     public static String enterDirString;
+    public static Map<String, List<String>> map = initMap();
 
     public static void main(String[] args){
         try {
@@ -86,62 +94,11 @@ public class Main {
         }
     }
 
-    private static void buildProject(String name, String path, String builder, String type, boolean git){
-        try {
-            ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", "cd " + path + " && mkdir " + name + " && cd " + name + " && echo \"# " + name + "\" > README.md" + " && mkdir src docs includes scripts test" + (git ? " && git init && touch .gitignore .gitmodules" : ""));
-            runCommand(processBuilder);
-
-            if(builder.equals("premake")){
-                buildPremakeProject(path, name, type);
-            } else if(builder.equals("cmake")){
-                buildCmakeProject(path, name, type);
-            } else {
-                throw new RuntimeException("Builder not supported");
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void buildCmakeProject(String path, String name, String type) throws IOException{
-        ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && mkdir build cmake");
-        runCommand(processBuilder);
-
-        if (type.equals("lib")) {
-            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch lib.cpp");
-        } else {
-            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch main.cpp");
-        }
-
-        runCommand(processBuilder);
-
-        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/ > CMakeLists.txt");
-        runCommand(processBuilder);
-        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.sh");
-        runCommand(processBuilder);
-        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.bat");
-        runCommand(processBuilder);
-    }
-
-    private static void buildPremakeProject(String path, String name, String type) throws IOException{
-        ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && mkdir premake");
-        runCommand(processBuilder);
-
-        if (type.equals("lib")) {
-            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch lib.cpp");
-        } else {
-            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch main.cpp");
-        }
-        runCommand(processBuilder);
-
-        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/ > Build.lua");
-        runCommand(processBuilder);
-        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.sh");
-        runCommand(processBuilder);
-        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/activateBat.txt > scripts/build.bat");
-        runCommand(processBuilder);
+    private static Map<String, List<String>> initMap(){
+        Map<String, List<String>> map = new HashMap<>();
+        map.put("premake", List.of("activatePremakeBash.txt", "activatePremakeBat.txt", "premakeBin.txt", "premakeLib.txt"));
+        map.put("cmake", List.of("activateCMakeBash.txt", "activateCMakeBat.txt", "cmakeBin.txt", "cmakeLib.txt"));
+        return map;
     }
 
     private static Options getOptions() {
@@ -173,6 +130,83 @@ public class Main {
         options.addOption(option6);
         options.addOption(option7);
         return options;
+    }
+
+    private static void buildProject(String name, String path, String builder, String type, boolean git){
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", "cd " + path + " && mkdir " + name + " && cd " + name + " && echo \"# " + name + "\" > README.md" + " && mkdir src docs dependencies scripts test" + (git ? " && git init && touch .gitignore .gitmodules" : ""));
+            runCommand(processBuilder);
+
+            if(builder.equals("premake")){
+                buildPremakeProject(type);
+            } else if(builder.equals("cmake")){
+                buildCmakeProject(type);
+            } else {
+                throw new RuntimeException("Builder not supported");
+            }
+
+            finishProjectCreation(name, type, builder);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void buildCmakeProject(String type) throws IOException{
+        ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && mkdir build cmake");
+        runCommand(processBuilder);
+
+        if (type.equals("lib")) {
+            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch lib.cpp");
+        } else {
+            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch main.cpp");
+        }
+
+        runCommand(processBuilder);
+    }
+
+
+    private static void buildPremakeProject(String type) throws IOException{
+        ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && mkdir premake");
+        runCommand(processBuilder);
+
+        if (type.equals("lib")) {
+            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch lib.cpp");
+        } else {
+            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch main.cpp");
+        }
+        runCommand(processBuilder);
+    }
+
+    private static void finishProjectCreation(String name, String type, String builder) throws IOException{
+        String buildPath, bashPath, batPath;
+        var basePath = runCommand(new ProcessBuilder("bash", "-c", "echo $CPP_TEMPLATE_1J")).strip() + "/templates/";
+        buildPath = basePath + map.get(builder).get(type.equals("lib") ? 3 : 2);
+        bashPath = basePath + map.get(builder).get(0);
+        batPath = basePath + map.get(builder).get(1);
+
+        Path path = Paths.get(buildPath);
+        String buildContent = Files.readString(path);
+        buildContent = buildContent.replace("{{projectName}}", name);
+        String minimumCMakeVersion = runCommand(new ProcessBuilder("bash", "-c", "cmake --version")).split(" ")[2].split("\n")[0];
+        buildContent = buildContent.replace("{{minimumCMakeVersion}}", minimumCMakeVersion);
+
+        path = Paths.get(bashPath);
+        String bashContent = Files.readString(path);
+        bashContent = bashContent.replace("{{name}}", name);
+
+        path = Paths.get(batPath);
+        String batContent = Files.readString(path);
+        batContent = batContent.replace("{{name}}", name);
+
+
+        ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && echo \"" + buildContent + "\" > " + (builder.equals("premake") ? "premake5.lua" : "CMakeLists.txt"));
+        runCommand(processBuilder);
+        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && echo \"" + bashContent + "\" > scripts/build.sh");
+        runCommand(processBuilder);
+        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && echo \"" + batContent + "\" > scripts/build.bat");
+        runCommand(processBuilder);
     }
 
     private static String runCommand(ProcessBuilder processBuilder) throws IOException {
