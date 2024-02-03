@@ -4,8 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Map;
-
 import org.apache.commons.cli.*;
 
 /**
@@ -34,7 +32,7 @@ public class Main {
     public static void main(String[] args){
         try {
             if(runCommand(new ProcessBuilder("echo $CPP_TEMPLATE_1J")).isEmpty()) {
-                setupTemplateGenerator();
+                throw new RuntimeException("Please setup the environment before running the program. Run the setup.sh script for that on Linux or setup.bat on Windows.");
             }
         } catch (IOException e) {
                 e.printStackTrace();
@@ -87,10 +85,6 @@ public class Main {
         }
     }
 
-    private static void setupTemplateGenerator() {
-
-    }
-
     private static void buildProject(String name, String path, String builder, String type, boolean git){
         try {
             ProcessBuilder processBuilder = new ProcessBuilder("cd " + path + " && mkdir " + name + " && cd " + name + " && echo \"# " + name + "\" > README.md" + " && mkdir src docs includes scripts test" + (git ? " && git init && touch .gitignore .gitmodules" : ""));
@@ -122,11 +116,11 @@ public class Main {
 
         runCommand(processBuilder);
 
-        processBuilder = new ProcessBuilder(enterDirString + " && cat > CMakeLists.txt");
+        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/ > CMakeLists.txt");
         runCommand(processBuilder);
-        processBuilder = new ProcessBuilder(enterDirString + " && cat > scripts/build.sh");
+        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.sh");
         runCommand(processBuilder);
-        processBuilder = new ProcessBuilder(enterDirString + " && cat > scripts/build.bat");
+        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.bat");
         runCommand(processBuilder);
     }
 
@@ -141,11 +135,11 @@ public class Main {
         }
         runCommand(processBuilder);
 
-        processBuilder = new ProcessBuilder(enterDirString + " && cat > Build.lua");
+        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/ > Build.lua");
         runCommand(processBuilder);
-        processBuilder = new ProcessBuilder(enterDirString + " && cat > scripts/build.sh");
+        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.sh");
         runCommand(processBuilder);
-        processBuilder = new ProcessBuilder(enterDirString + " && cat > scripts/build.bat");
+        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/activateBat.txt > scripts/build.bat");
         runCommand(processBuilder);
     }
 
