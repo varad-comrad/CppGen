@@ -31,7 +31,7 @@ public class Main {
 
     public static void main(String[] args){
         try {
-            if(runCommand(new ProcessBuilder("echo $CPP_TEMPLATE_1J")).isEmpty()) {
+            if(runCommand(new ProcessBuilder("bash", "-c", "echo $CPP_TEMPLATE_1J")).isEmpty()) {
                 throw new RuntimeException("Please setup the environment before running the program. Run the setup.sh script for that on Linux or setup.bat on Windows.");
             }
         } catch (IOException e) {
@@ -54,6 +54,7 @@ public class Main {
             } else if(cmd.hasOption("i")){
                 interactiveCreationMode();
             } else {
+                if(cmd.getOptionValue("n") == null) throw new ParseException("Name of the project is required");
                 System.out.println("Building project...");
                 Thread.sleep(150);
                 String name = cmd.getOptionValue("n"); // String or null
@@ -78,7 +79,7 @@ public class Main {
             }
         } catch (ParseException e) {
             System.out.println(e.getMessage());
-            formatter.printHelp("utility-name", options);
+            formatter.printHelp("This C++ project generator has the following arguments", options);
             System.exit(1);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -87,7 +88,7 @@ public class Main {
 
     private static void buildProject(String name, String path, String builder, String type, boolean git){
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("cd " + path + " && mkdir " + name + " && cd " + name + " && echo \"# " + name + "\" > README.md" + " && mkdir src docs includes scripts test" + (git ? " && git init && touch .gitignore .gitmodules" : ""));
+            ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", "cd " + path + " && mkdir " + name + " && cd " + name + " && echo \"# " + name + "\" > README.md" + " && mkdir src docs includes scripts test" + (git ? " && git init && touch .gitignore .gitmodules" : ""));
             runCommand(processBuilder);
 
             if(builder.equals("premake")){
@@ -105,41 +106,41 @@ public class Main {
     }
 
     private static void buildCmakeProject(String path, String name, String type) throws IOException{
-        ProcessBuilder processBuilder = new ProcessBuilder(enterDirString + " && mkdir build cmake");
+        ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && mkdir build cmake");
         runCommand(processBuilder);
 
         if (type.equals("lib")) {
-            processBuilder = new ProcessBuilder(enterDirString + " && cd src && touch lib.cpp");
+            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch lib.cpp");
         } else {
-            processBuilder = new ProcessBuilder(enterDirString + " && cd src && touch main.cpp");
+            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch main.cpp");
         }
 
         runCommand(processBuilder);
 
-        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/ > CMakeLists.txt");
+        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/ > CMakeLists.txt");
         runCommand(processBuilder);
-        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.sh");
+        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.sh");
         runCommand(processBuilder);
-        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.bat");
+        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.bat");
         runCommand(processBuilder);
     }
 
     private static void buildPremakeProject(String path, String name, String type) throws IOException{
-        ProcessBuilder processBuilder = new ProcessBuilder(enterDirString + " && mkdir premake");
+        ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && mkdir premake");
         runCommand(processBuilder);
 
         if (type.equals("lib")) {
-            processBuilder = new ProcessBuilder(enterDirString + " && cd src && touch lib.cpp");
+            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch lib.cpp");
         } else {
-            processBuilder = new ProcessBuilder(enterDirString + " && cd src && touch main.cpp");
+            processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cd src && touch main.cpp");
         }
         runCommand(processBuilder);
 
-        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/ > Build.lua");
+        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/ > Build.lua");
         runCommand(processBuilder);
-        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.sh");
+        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/activateBash.txt > scripts/build.sh");
         runCommand(processBuilder);
-        processBuilder = new ProcessBuilder(enterDirString + " && cat $CPP_TEMPLATE_1J/activateBat.txt > scripts/build.bat");
+        processBuilder = new ProcessBuilder("bash", "-c", enterDirString + " && cat $CPP_TEMPLATE_1J/activateBat.txt > scripts/build.bat");
         runCommand(processBuilder);
     }
 
@@ -150,14 +151,14 @@ public class Main {
         Option option1 = new Option("v", "version", false, "Show the version of the executable");
         option1.setRequired(false);
         Option option2 = new Option("n", "name", true, "Name of the project (Required argument)");
-        option2.setRequired(true);
+        option2.setRequired(false);
         Option option3 = new Option("p", "path", true, "Path of the project");
         option3.setRequired(false);
         Option option4 = new Option("b", "builder", true, "Builder to use (premake or cmake for now)");
         option4.setRequired(false);
         Option option5 = new Option("i", "interactive", false, "Interactive mode");
         option5.setRequired(false);
-        Option option6 = new Option("t", "type", true, "Type of the project (executable, library, test for now)");
+        Option option6 = new Option("t", "type", true, "Type of the project (binary, library) (default: binary)");
         option6.setRequired(false);
         Option option7 = new Option("g", "git", false, "Initialize a git repository");
         option7.setRequired(false);
